@@ -32,6 +32,7 @@ public class PlayerController : MonoBehaviour
         Coin droppedCoin = Instantiate(coin, oldPosition, transform.rotation).GetComponent<Coin>();
         droppedCoin.value = Mathf.FloorToInt(playerGold.gold / 2);
         droppedCoin.persistent = false;
+        ((AutoDelete)droppedCoin.gameObject.AddComponent(typeof(AutoDelete))).deathTime = 30;
         playerGold.gold = Mathf.FloorToInt(playerGold.gold / 2);
         playerHealth.health = playerHealth.maxHealth;
     }

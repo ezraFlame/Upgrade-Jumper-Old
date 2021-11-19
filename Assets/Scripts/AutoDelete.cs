@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class AutoDelete : MonoBehaviour
 {
-    public float deathTime;
+    public float deathTime = 0;
 
     private void Awake()
     {
@@ -13,6 +13,10 @@ public class AutoDelete : MonoBehaviour
 
     public IEnumerator DeathTimer()
     {
+        while (deathTime == 0)
+        {
+            yield return null;
+        }
         yield return new WaitForSeconds(deathTime);
         Destroy(gameObject);
     }
