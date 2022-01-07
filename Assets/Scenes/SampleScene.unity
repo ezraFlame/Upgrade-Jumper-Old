@@ -3075,30 +3075,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11cfaa0a9421acb448e455a3598b7faf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shopUI: {fileID: 445499524}
-  player: {fileID: 1700562509}
-  jumpHeightButton: {fileID: 330496489}
-  extraJumpButton: {fileID: 1861225561}
-  extraJumpHeightButton: {fileID: 551548432}
-  wallJumpButton: {fileID: 2018748416}
-  wallJumpHeightButton: {fileID: 1855714263}
-  maxHealthButton: {fileID: 1594382436}
-  swordDamageButton: {fileID: 1812216523}
-  jumpHeightSlider: {fileID: 194958927}
-  extraJumpSlider: {fileID: 1583545747}
-  extraJumpHeightSlider: {fileID: 1024782803}
-  wallJumpSlider: {fileID: 723657062}
-  wallJumpHeightSlider: {fileID: 1525990368}
-  maxHealthSlider: {fileID: 275428490}
-  swordDamageSlider: {fileID: 1020143132}
-  jumpHeightCost: 20
-  extraJumpCost: 10
-  extraJumpHeightCost: 15
-  wallJumpCost: 10
-  wallJumpHeightCost: 15
-  maxHealthCost: 30
-  swordDamageCost: 15
-  costMultiplier: 1.2
 --- !u!114 &673437986
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3111,13 +3087,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9ca3672dfbc6b64b98b1f4d4d797935, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 1700562509}
-  airJumpText: {fileID: 1658623900}
-  airJumpSlider: {fileID: 1328617226}
-  wallJumpText: {fileID: 691615704}
-  wallJumpSlider: {fileID: 1281148272}
-  healthText: {fileID: 1635833357}
-  healthSlider: {fileID: 856091465}
 --- !u!1 &691615702
 GameObject:
   m_ObjectHideFlags: 0
@@ -7908,7 +7877,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1669293514}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -3.88, y: 0.51, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -8145,12 +8114,23 @@ MonoBehaviour:
   jumpForce: 15
   fallMultiplier: 8
   lowJumpMultiplier: 5
-  extraJumps: 1
-  checkRadius: 0.15
+  extraJumps: 0
+  hangTime: 0.1
+  jumpBufferTime: 0.1
+  wallSlideModifier: 0.5
+  wallJumpXVelocityHaltDelay: 0.2
+  checkDistance: 0.1
+  groundCheckWidth: 0.3
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
   feet: {fileID: 1814788375}
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  wallCheckDistance: 0.3
+  onWall: 0
+  onRightWall: 0
 --- !u!114 &1700562512
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -13,20 +13,40 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float airLinearDrag;
     private float moveX;
     private bool changeDir => (rb.velocity.x > 0f && moveX < 0f) || (rb.velocity.x < 0f && moveX > 0f);
+    private bool canMove => !wallGrab;
+
 
     [Header("Jumping")]
     [SerializeField] private float jumpForce;
     [SerializeField] private float fallMultiplier;
     [SerializeField] private float lowJumpMultiplier;
-    private bool canJump => (Input.GetButtonDown("Jump") && (onGround || extraJumpsValue > 0));
     [SerializeField] private short extraJumps;
+    [SerializeField] private float hangTime;
+    [SerializeField] private float jumpBufferTime;
+    private bool canJump => jumpBufferCounter > 0f && (hangTimeCounter > 0f || extraJumpsValue > 0f || onWall);
+    private bool isJumping = false;
     private short extraJumpsValue;
+    private float hangTimeCounter;
+    private float jumpBufferCounter;
+
+    [Header("Wall Movement")]
+    [SerializeField] private float wallSlideModifier;
+    [SerializeField] private float wallJumpXVelocityHaltDelay;
+    private bool wallGrab => onWall && !onGround && Input.GetButton("WallGrab");
+    public bool wallSlide => onWall && !onGround && !Input.GetButton("WallGrab") && rb.velocity.y < 0f;
 
     [Header("Ground Collision")]
-    [SerializeField] private float checkRadius;
+    [SerializeField] private float checkDistance;
+    [SerializeField] private float groundCheckWidth;
     [SerializeField] private LayerMask groundLayer;
-    private bool onGround;
     [SerializeField] private Transform feet;
+    private bool onGround;
+
+    [Header("Wall Collision")]
+    [SerializeField] private LayerMask wallLayer;
+    [SerializeField] private float wallCheckDistance;
+    public bool onWall;
+    public bool onRightWall;
 
     private void Start()
     {
@@ -38,7 +58,13 @@ public class PlayerController : MonoBehaviour
     {
         GetInput();
 
-        if (canJump) Jump();
+        if (Input.GetButtonDown("Jump"))
+        {
+            jumpBufferCounter = jumpBufferTime;
+        } else
+        {
+            jumpBufferCounter -= Time.deltaTime;
+        }
     }
 
     private void GetInput()
@@ -57,29 +83,73 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void Jump()
-    {
-        if (!onGround)
-            extraJumpsValue--;
-
-        ApplyAirLinearDrag();
-        rb.velocity = new Vector2(rb.velocity.x, 0f);
-        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-    }
-
     private void FixedUpdate()
     {
         CheckCollisions();
-        Move();
+        if (canMove) Move();
+        else rb.velocity = Vector2.Lerp(rb.velocity, (new Vector2(moveX * maxVelocity, rb.velocity.y)), .5f * Time.fixedDeltaTime);
         if (onGround)
         {
-            extraJumpsValue = extraJumps;
             ApplyGroundLinearDrag();
+            extraJumpsValue = extraJumps;
+            hangTimeCounter = hangTime;
         } else
         {
             ApplyAirLinearDrag();
             FallMultiplier();
+            hangTimeCounter -= Time.fixedDeltaTime;
+            if (!onWall || rb.velocity.y < 0f) isJumping = false;
         }
+        if (canJump)
+        {
+            if (onWall && !onGround)
+            {
+                if (onRightWall && moveX > 0f || !onRightWall && moveX < 0f)
+                {
+                    StartCoroutine(NeutralWallJump());
+                } else
+                {
+                    WallJump();
+                }
+            } else
+            {
+                Jump(Vector2.up);
+            }
+        }
+        
+        if (!isJumping)
+        {
+            if (wallSlide) WallSlide();
+            if (wallGrab) WallGrab();
+            if (onWall) StickToWall();
+        }    
+    }
+
+    private void Jump(Vector2 direction)
+    {
+        if (!onGround && !onWall)
+            extraJumpsValue--;
+
+        ApplyAirLinearDrag();
+        rb.velocity = new Vector2(rb.velocity.x, 0f);
+        rb.AddForce(direction * jumpForce, ForceMode2D.Impulse);
+        hangTimeCounter = 0;
+        jumpBufferCounter = 0f;
+        isJumping = true;
+    }
+
+    private void WallJump()
+    {
+        Vector2 jumpDirection = onRightWall ? Vector2.left : Vector2.right;
+        Jump(Vector2.up + jumpDirection);
+    }
+
+    IEnumerator NeutralWallJump()
+    {
+        Vector2 jumpDirection = onRightWall ? Vector2.left : Vector2.right;
+        Jump(Vector2.up + jumpDirection);
+        yield return new WaitForSeconds(wallJumpXVelocityHaltDelay);
+        rb.velocity = new Vector2(0f, rb.velocity.y);
     }
 
     private void Move()
@@ -109,7 +179,11 @@ public class PlayerController : MonoBehaviour
 
     private void CheckCollisions()
     {
-        onGround = Physics2D.OverlapCircle(feet.position, checkRadius, groundLayer);
+        onGround = Physics2D.BoxCast(feet.position, new Vector2(groundCheckWidth, checkDistance), 0, Vector2.down, 0f, groundLayer);
+
+        onWall = Physics2D.Raycast(transform.position, Vector2.right, wallCheckDistance, wallLayer) ||
+                 Physics2D.Raycast(transform.position, Vector2.left, wallCheckDistance, wallLayer);
+        onRightWall = Physics2D.Raycast(transform.position, Vector2.right, wallCheckDistance, wallLayer);
     }
 
     private void FallMultiplier()
@@ -126,10 +200,35 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void WallGrab()
+    {
+        rb.gravityScale = 0f;
+        rb.velocity = new Vector2(rb.velocity.x, 0f);
+    }
+
+    private void StickToWall()
+    {
+        if (onRightWall && moveX >= 0f)
+        {
+            rb.velocity = new Vector2(1f, rb.velocity.y);
+        } else if (!onRightWall && moveX <= 0f)
+        {
+            rb.velocity = new Vector2(-1f, rb.velocity.y);
+        }
+    }
+
+    public void WallSlide()
+    {
+        rb.velocity = new Vector2(rb.velocity.x, -maxVelocity * wallSlideModifier);
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(feet.position, checkRadius);
+        Gizmos.DrawWireCube(new Vector2(feet.position.x, Mathf.Lerp(feet.position.y, feet.position.y - checkDistance, .5f)), new Vector3(groundCheckWidth, checkDistance, 0));
+
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.right * wallCheckDistance);
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.left * wallCheckDistance);
     }
 
 
