@@ -1,19 +1,26 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
     private Rigidbody2D rb;
     private Animator anim;
+    private PlayerInput input;
+
+    private Health health;
+    private int gold;
 
     [Header("Movement")]
     [SerializeField] private float acceleration;
-    [SerializeField] private float maxVelocity;
+    [SerializeField] private float maxMoveSpeed;
     [SerializeField] private float groundLinearDrag;
     [SerializeField] private float airLinearDrag;
     private float moveX;
+    private float moveY;
     private bool changeDir => (rb.velocity.x > 0f && moveX < 0f) || (rb.velocity.x < 0f && moveX > 0f);
     private bool canMove => !wallGrab;
+    private bool facingRight = true;
 
 
     [Header("Jumping")]
@@ -23,8 +30,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private short extraJumps;
     [SerializeField] private float hangTime;
     [SerializeField] private float jumpBufferTime;
-    private bool canJump => jumpBufferCounter > 0f && (hangTimeCounter > 0f || extraJumpsValue > 0f || onWall);
-    private bool isJumping = false;
+    private bool canJump => jumpBufferCounter > 0f && (hangTimeCounter > 0f || extraJumpsValue > 0f || (onWall && wallJumpUnlocked));
+    private bool isJumping;
     private short extraJumpsValue;
     private float hangTimeCounter;
     private float jumpBufferCounter;
@@ -32,8 +39,18 @@ public class PlayerController : MonoBehaviour
     [Header("Wall Movement")]
     [SerializeField] private float wallSlideModifier;
     [SerializeField] private float wallJumpXVelocityHaltDelay;
-    private bool wallGrab => onWall && !onGround && Input.GetButton("WallGrab");
-    public bool wallSlide => onWall && !onGround && !Input.GetButton("WallGrab") && rb.velocity.y < 0f;
+    private bool wallGrab => onWall && !onGround && input.actions["WallGrab"].IsPressed() && wallGrabUnlocked;
+    private bool wallSlide => onWall && !onGround && !input.actions["WallGrab"].IsPressed() && rb.velocity.y < 0f;
+
+
+    [Header("Dashing")]
+    [SerializeField] private float dashSpeed;
+    [SerializeField] private float dashLength;
+    [SerializeField] private float dashBufferTime;
+    private float dashBufferCounter;
+    private bool isDashing = false;
+    private bool hasDashed;
+    private bool canDash => dashBufferCounter > 0f && !hasDashed && dashUnlocked;
 
     [Header("Ground Collision")]
     [SerializeField] private float checkDistance;
@@ -48,86 +65,156 @@ public class PlayerController : MonoBehaviour
     public bool onWall;
     public bool onRightWall;
 
+    [Header("Particles")]
+    [SerializeField] private GameObject jumpParticle;
+
+    //Upgrades
+    private bool wallGrabUnlocked = false;
+    private bool wallJumpUnlocked = false;
+    private bool dashUnlocked = false;
+
     private void Start()
+    {
+        GetComponentRefs();
+    }
+
+    private void GetComponentRefs()
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+        input = GetComponent<PlayerInput>();
+        health = GetComponent<Health>();
     }
 
     private void Update()
     {
-        GetInput();
+        Vector2 moveInput = input.actions["Move"].ReadValue<Vector2>();
+        if (moveInput.x > 0) moveX = 1;
+        else if (moveInput.x < 0) moveX = -1;
+        else moveX = 0;
 
-        if (Input.GetButtonDown("Jump"))
+        if (moveInput.y > 0) moveY = 1;
+        else if (moveInput.y < 0) moveY = -1;
+        else moveY = 0;
+
+        if (input.actions["Jump"].WasPressedThisFrame()) jumpBufferCounter = jumpBufferTime;
+        else jumpBufferCounter -= Time.deltaTime;
+
+        if (input.actions["Dash"].WasPressedThisFrame()) dashBufferCounter = dashBufferTime;
+        else dashBufferCounter -= Time.deltaTime;
+
+        UpdateAnimations();
+    }
+
+    private void UpdateAnimations()
+    {
+        if (isDashing)
         {
-            jumpBufferCounter = jumpBufferTime;
+
         } else
         {
-            jumpBufferCounter -= Time.deltaTime;
+            if ((moveX < 0f && facingRight || moveX > 0f && !facingRight) && !wallGrab && !wallSlide)
+            {
+                Flip();
+            }
+            if (onGround)
+            {
+                anim.SetBool("IsGrounded", true);
+                anim.SetBool("OnWall", false);
+                anim.SetFloat("MoveX", Mathf.Abs(moveX));
+            } else
+            {
+                anim.SetBool("IsGrounded", false);
+            }
+
+            if (isJumping)
+            {
+                anim.SetBool("IsJumping", true);
+                anim.SetBool("OnWall", false);
+                anim.SetFloat("MoveY", 0f);
+            } else
+            {
+                anim.SetBool("IsJumping", false);
+
+                if (onWall)
+                {
+                    anim.SetBool("OnWall", true);
+                    anim.SetFloat("MoveY", 0f);
+                }
+            }
         }
     }
 
-    private void GetInput()
+    public void Flip()
     {
-        float inputX = Input.GetAxisRaw("Horizontal");
-
-        if (inputX > 0.5)
-        {
-            moveX = 1;
-        } else if (inputX < -0.5)
-        {
-            moveX = -1;
-        } else
-        {
-            moveX = 0;
-        }
+        facingRight = !facingRight;
+        transform.Rotate(0f, 180f, 0f);
     }
 
     private void FixedUpdate()
     {
         CheckCollisions();
-        if (canMove) Move();
-        else rb.velocity = Vector2.Lerp(rb.velocity, (new Vector2(moveX * maxVelocity, rb.velocity.y)), .5f * Time.fixedDeltaTime);
-        if (onGround)
+        if (canDash) StartCoroutine(Dash(moveX, moveY));
+        if (!isDashing)
         {
-            ApplyGroundLinearDrag();
-            extraJumpsValue = extraJumps;
-            hangTimeCounter = hangTime;
-        } else
-        {
-            ApplyAirLinearDrag();
-            FallMultiplier();
-            hangTimeCounter -= Time.fixedDeltaTime;
-            if (!onWall || rb.velocity.y < 0f) isJumping = false;
-        }
-        if (canJump)
-        {
-            if (onWall && !onGround)
+            if (canMove) Move();
+            else rb.velocity = Vector2.Lerp(rb.velocity, (new Vector2(moveX * maxMoveSpeed, rb.velocity.y)), .5f * Time.fixedDeltaTime);
+            if (onGround)
             {
-                if (onRightWall && moveX > 0f || !onRightWall && moveX < 0f)
-                {
-                    StartCoroutine(NeutralWallJump());
-                } else
-                {
-                    WallJump();
-                }
-            } else
-            {
-                Jump(Vector2.up);
+                ApplyGroundLinearDrag();
+                RefreshDash();
+                RefreshJumps();
             }
-        }
-        
-        if (!isJumping)
-        {
-            if (wallSlide) WallSlide();
-            if (wallGrab) WallGrab();
-            if (onWall) StickToWall();
-        }    
+            else
+            {
+                ApplyAirLinearDrag();
+                FallMultiplier();
+                hangTimeCounter -= Time.fixedDeltaTime;
+                if (onWall || rb.velocity.y < 0f) isJumping = false;
+            }
+            if (canJump)
+            {
+                if (onWall && wallJumpUnlocked && !onGround)
+                {
+                    if (onRightWall && moveX > 0f || !onRightWall && moveX < 0f)
+                    {
+                        StartCoroutine(NeutralWallJump());
+                    }
+                    else
+                    {
+                        WallJump();
+                    }
+                }
+                else
+                {
+                    Jump(Vector2.up);
+                    Instantiate(jumpParticle, transform.position, transform.rotation);
+                }
+            }
+
+            if (!isJumping)
+            {
+                if (wallSlide) WallSlide();
+                if (wallGrab) WallGrab();
+                if (onWall) StickToWall();
+            }
+        }   
+    }
+
+    public void RefreshJumps()
+    {
+        extraJumpsValue = extraJumps;
+        hangTimeCounter = hangTime;
+    }
+
+    public void RefreshDash()
+    {
+        hasDashed = false;
     }
 
     private void Jump(Vector2 direction)
     {
-        if (!onGround && !onWall)
+        if (!onGround && !(onWall && wallJumpUnlocked) && !(hangTimeCounter > 0f))
             extraJumpsValue--;
 
         ApplyAirLinearDrag();
@@ -155,9 +242,9 @@ public class PlayerController : MonoBehaviour
     private void Move()
     {
         rb.AddForce(new Vector2(moveX * acceleration, 0));
-        if (Mathf.Abs(rb.velocity.x) > maxVelocity)
+        if (Mathf.Abs(rb.velocity.x) > maxMoveSpeed)
         {
-            rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxVelocity, rb.velocity.y);
+            rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxMoveSpeed, rb.velocity.y);
         }
     }
 
@@ -191,7 +278,7 @@ public class PlayerController : MonoBehaviour
         if (rb.velocity.y < 0)
         {
             rb.gravityScale = fallMultiplier;
-        } else if (rb.velocity.y > 0 && !Input.GetButton("Jump"))
+        } else if (rb.velocity.y > 0 && !input.actions["Jump"].IsPressed())
         {
             rb.gravityScale = lowJumpMultiplier;
         } else
@@ -210,16 +297,82 @@ public class PlayerController : MonoBehaviour
     {
         if (onRightWall && moveX >= 0f)
         {
-            rb.velocity = new Vector2(1f, rb.velocity.y);
+            rb.velocity = new Vector2(maxMoveSpeed, rb.velocity.y);
         } else if (!onRightWall && moveX <= 0f)
         {
-            rb.velocity = new Vector2(-1f, rb.velocity.y);
+            rb.velocity = new Vector2(-maxMoveSpeed, rb.velocity.y);
         }
     }
 
     public void WallSlide()
     {
-        rb.velocity = new Vector2(rb.velocity.x, -maxVelocity * wallSlideModifier);
+        rb.velocity = new Vector2(rb.velocity.x, -maxMoveSpeed * wallSlideModifier);
+        if (wallGrabUnlocked)
+        {
+            RefreshDash();
+            RefreshJumps();
+        }
+    }
+
+    IEnumerator Dash(float x, float y)
+    {
+        float dashStartTime = Time.time;
+        hasDashed = true;
+        isDashing = true;
+
+        isJumping = false;
+        rb.velocity = Vector2.zero;
+        rb.gravityScale = 0f;
+        rb.drag = 0f;
+        Vector2 dir;
+        if (x != 0f || y != 0f) dir = new Vector2(x, y);
+        else
+        {
+            dir = facingRight ? Vector2.right : Vector2.left;
+        }
+
+        while (Time.time < dashStartTime + dashLength)
+        {
+            rb.velocity = dir.normalized * dashSpeed;
+            yield return null;
+        }
+        isDashing = false;
+    }
+
+    public int GetGold()
+    {
+        return gold;
+    }
+
+    public int GetHealth()
+    {
+        return health.health;
+    }
+
+    public int GetMaxHealth()
+    {
+        return health.maxHealth;
+    }
+
+    public int GetExtraJumps()
+    {
+        return extraJumps;
+    }
+
+    public int GetExtraJumpsValue()
+    {
+        return extraJumpsValue;
+    }
+
+    public void AddGold(int amount)
+    {
+        if (amount > 0)
+        {
+            gold += amount;
+        } else
+        {
+            Debug.Log("You can't add negative gold!");
+        }
     }
 
     private void OnDrawGizmos()

@@ -14,7 +14,7 @@ public class Coin : MonoBehaviour
         if (other.gameObject.CompareTag("Player"))
         {
             PlayerController player = other.GetComponent<PlayerController>();
-/*            player.playerGold.gold += value;*/
+            player.AddGold(value);
             if (persistent == true)
             {
                 StartCoroutine(Respawn());

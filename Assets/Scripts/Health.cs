@@ -5,14 +5,14 @@ using UnityEngine.Events;
 
 public class Health : MonoBehaviour
 {
-    public float health;
-    public float maxHealth;
+    public int health;
+    public int maxHealth;
 
     public UnityAction onDeath;
 
     public UnityAction onDamage;
 
-    public void Damage(float damage)
+    public void Damage(int damage)
     {
         if (health > 0)
         {

@@ -25,7 +25,7 @@ public class PatrolSquire : MonoBehaviour
     public bool alreadyJumped = false;
     public bool grounded = true;
 
-    public float damage;
+    public int damage;
 
     public LayerMask ground;
 
