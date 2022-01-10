@@ -96,12 +96,14 @@ public class ShooterSquire : MonoBehaviour
             Vector3 directionToPlayer;
             Vector3 lineEnd = currentTrackDirection * lineDistance;
             trackTimeCounter = 0;
+            float moveAmount;
             while (trackTimeCounter < trackTime)
             {
+                moveAmount = trackSpeed * Time.deltaTime;
+                moveAmount = moveAmount * moveAmount * (3f - 2f * moveAmount);
                 directionToPlayer = GetDirection(target.transform.position, transform.position);
-                currentTrackDirection = Vector3.RotateTowards(currentTrackDirection, directionToPlayer, trackSpeed * Time.deltaTime, 0f);
-                trackTimeCounter += Time.deltaTime;
                 lineEnd = currentTrackDirection.normalized * lineDistance;
+                trackTimeCounter += Time.deltaTime;
                 line.SetPosition(0, transform.position);
                 line.SetPosition(1, lineEnd + transform.position);
                 yield return null;

@@ -7,25 +7,24 @@ public class UIManager : MonoBehaviour
 {
     public PlayerController player;
 
-    public Text airJumpText;
-    public Slider airJumpSlider;
-    public Text wallJumpText;
-    public Slider wallJumpSlider;
+    public Text jumpText;
+    public Slider jumpSlider;
 
     public Text healthText;
     public Slider healthSlider;
 
+    public Text goldText;
+
     private void Update()
     {
-        airJumpSlider.maxValue = player.playerMovement.extraJumps;
-        airJumpSlider.value = player.playerMovement.currentExtraJumps;
-        airJumpText.text = "air\n" + player.playerMovement.currentExtraJumps;
-        healthText.text = "" + player.playerHealth.health + " / " + player.playerHealth.maxHealth;
+        jumpSlider.maxValue = player.GetExtraJumps();
+        jumpSlider.value = player.GetExtraJumpsValue();
+        jumpText.text = "Jumps\n" + player.GetExtraJumpsValue();
 
-        wallJumpSlider.maxValue = player.playerMovement.wallJumps;
-        wallJumpSlider.value = player.playerMovement.currentWallJumps;
-        wallJumpText.text = "wall\n" + player.playerMovement.currentWallJumps;
-        healthSlider.maxValue = player.playerHealth.maxHealth;
-        healthSlider.value = player.playerHealth.health;
+        healthText.text = "" + player.GetHealth() + " / " + player.GetMaxHealth();
+        healthSlider.maxValue = player.GetMaxHealth();
+        healthSlider.value = player.GetHealth();
+
+        goldText.text = player.GetGold() + "";
     }
 }

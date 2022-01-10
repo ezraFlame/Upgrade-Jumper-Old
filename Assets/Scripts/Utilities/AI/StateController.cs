@@ -35,9 +35,31 @@ public class StateController : MonoBehaviour
 
     public float jumpTime;
 
+    public int health;
+    public int maxHealth;
+
     public GameObject deathParticle;
 
     public bool aiActive;
+
+    public float stateTimeElapsed;
+
+    //Shooter Squire
+    public Vector3 currentTrackDirection;
+
+    public GameObject target;
+
+    public float attackDelay;
+
+    public float trackTime;
+
+    public float trackSpeed;
+
+    public float detectionDistance;
+
+    public LineRenderer line;
+
+    public float lineDistance;
 
     void Start()
     {
@@ -58,11 +80,29 @@ public class StateController : MonoBehaviour
         anim.SetBool("jumping", alreadyJumped);
     }
 
+    public bool Countdown(float duration)
+    {
+        stateTimeElapsed += Time.deltaTime;
+        return (stateTimeElapsed >= duration);
+    }
+
+    public Vector3 GetDirection(Vector3 posA, Vector3 posB)
+    {
+        Vector3 direction = posA - posB;
+        return direction.normalized;
+    }
+
     public void TransitionToState(State nextState)
     {
         if (nextState != remainInState)
         {
             currentState = nextState;
+            OnExitState();
         }
+    }
+
+    private void OnExitState()
+    {
+        stateTimeElapsed = 0;
     }
 }

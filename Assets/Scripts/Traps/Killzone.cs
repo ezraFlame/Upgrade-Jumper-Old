@@ -9,6 +9,6 @@ public class Killzone : MonoBehaviour
     {
         GameObject go = collision.gameObject;
         Health health = go.GetComponent<Health>();
-        health.Damage(float.MaxValue);
+        health.Damage(int.MaxValue);
     }
 }

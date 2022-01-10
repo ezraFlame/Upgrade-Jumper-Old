@@ -37,10 +37,10 @@ TextureImporter:
     second: jump_1
   - first:
       213: 5044450397378941176
-    second: wallSlide_1
+    second: fall_1
   - first:
       213: 1871739406167786269
-    second: crouch_1
+    second: wallSlide_1
   - first:
       213: 6426868497666326525
     second: player_13
@@ -400,7 +400,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: wallSlide_1
+      name: fall_1
       rect:
         serializedVersion: 2
         x: 96
@@ -421,7 +421,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: crouch_1
+      name: wallSlide_1
       rect:
         serializedVersion: 2
         x: 0
