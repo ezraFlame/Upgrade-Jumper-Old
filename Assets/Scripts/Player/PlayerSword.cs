@@ -17,7 +17,7 @@ public class PlayerSword : MonoBehaviour
     public void EndAttack()
     {
         gameObject.SetActive(false);
-        player.playerMovement.canTurn = true;
+/*        player.playerMovement.canTurn = true;*/
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
