@@ -4271,20 +4271,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff2ed67cb36700b4d817a5033d17c288, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  acceleration: 45
-  maxMoveSpeed: 10
+  acceleration: 20
+  maxMoveSpeed: 12
   groundLinearDrag: 12
-  airLinearDrag: 2.5
-  jumpForce: 18
+  airLinearDrag: 2
+  jumpForce: 15
   fallMultiplier: 8
   lowJumpMultiplier: 5
-  extraJumps: 1
-  hangTime: 0.1
+  extraJumps: 0
+  hangTime: 0.2
   jumpBufferTime: 0.1
   wallSlideModifier: 0.5
-  wallJumpXVelocityHaltDelay: 0.2
+  wallJumpXVelocityHaltDelay: 0.1
   dashSpeed: 20
-  dashLength: 0.2
+  dashLength: 10
   dashBufferTime: 0.1
   checkDistance: 0.05
   groundCheckWidth: 0.3
@@ -4295,7 +4295,7 @@ MonoBehaviour:
   wallLayer:
     serializedVersion: 2
     m_Bits: 8
-  wallCheckDistance: 0.3
+  wallCheckDistance: 0
   onWall: 0
   onRightWall: 0
   jumpParticle: {fileID: 3544903110219474870, guid: 3eb3047d2a80bb34b88112ff94d7bab1, type: 3}
@@ -4357,8 +4357,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb272e59863b3cc4da2f29014c121ee7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  health: 3
-  maxHealth: 3
+  health: 0
+  maxHealth: 0
 --- !u!95 &1700562514
 Animator:
   serializedVersion: 3
@@ -5192,7 +5192,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentState: {fileID: 11400000, guid: 4d9dc1deef2717646ae1d0bd272bb253, type: 2}
   remainInState: {fileID: 11400000, guid: 56e079b4b5d0cbf46861479274b7145f, type: 2}
-  pathfinding: {fileID: 0}
+  pathfinding: {fileID: 1046471641}
   poi: []
   path: []
   mask:
@@ -5220,11 +5220,11 @@ MonoBehaviour:
   currentTrackDirection: {x: 0, y: 0, z: 0}
   target: {fileID: 0}
   attackDelay: 0
-  trackTime: 5
-  trackSpeed: 9
-  detectionDistance: 10
+  trackTime: 0
+  trackSpeed: 0
+  detectionDistance: 0
   line: {fileID: 8115698195749007413}
-  lineDistance: 25
+  lineDistance: 0
 --- !u!1 &8799884218000789133
 GameObject:
   m_ObjectHideFlags: 0
