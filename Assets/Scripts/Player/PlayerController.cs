@@ -30,6 +30,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private short extraJumps;
     [SerializeField] private float hangTime;
     [SerializeField] private float jumpBufferTime;
+    [SerializeField] private float jumpThreshold;
     private bool canJump => jumpBufferCounter > 0f && (hangTimeCounter > 0f || extraJumpsValue > 0f || (onWall && wallJumpUnlocked));
     private bool isJumping;
     private short extraJumpsValue;
@@ -69,9 +70,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private GameObject jumpParticle;
 
     //Upgrades
-    private bool wallGrabUnlocked = false;
-    private bool wallJumpUnlocked = false;
-    private bool dashUnlocked = false;
+    [Header("Upgrades")]
+    [SerializeField] private bool wallGrabUnlocked;
+    [SerializeField] private bool wallJumpUnlocked;
+    [SerializeField] private bool dashUnlocked;
 
     private void Start()
     {
@@ -89,8 +91,8 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         Vector2 moveInput = input.actions["Move"].ReadValue<Vector2>();
-        if (moveInput.x > 0) moveX = 1;
-        else if (moveInput.x < 0) moveX = -1;
+        if (moveInput.x > 0.5) moveX = 1;
+        else if (moveInput.x < -0.5) moveX = -1;
         else moveX = 0;
 
         if (moveInput.y > 0) moveY = 1;
@@ -236,7 +238,7 @@ public class PlayerController : MonoBehaviour
         Vector2 jumpDirection = onRightWall ? Vector2.left : Vector2.right;
         Jump(Vector2.up + jumpDirection);
         yield return new WaitForSeconds(wallJumpXVelocityHaltDelay);
-        rb.velocity = new Vector2(0f, rb.velocity.y);
+        rb.velocity = new Vector2(Mathf.Abs(rb.velocity.x) * jumpDirection.x, rb.velocity.y);
     }
 
     private void Move()
@@ -275,7 +277,7 @@ public class PlayerController : MonoBehaviour
 
     private void FallMultiplier()
     {
-        if (rb.velocity.y < 0)
+        if (rb.velocity.y <= jumpThreshold)
         {
             rb.gravityScale = fallMultiplier;
         } else if (rb.velocity.y > 0 && !input.actions["Jump"].IsPressed())
@@ -372,6 +374,29 @@ public class PlayerController : MonoBehaviour
         } else
         {
             Debug.Log("You can't add negative gold!");
+        }
+    }
+
+    public void BuyItem(ShopItem.ItemType type)
+    {
+        int cost = ShopItem.GetCost(type);
+        Debug.Log(gold);
+        if (gold >= cost)
+        {
+            gold -= cost;
+        } else
+        {
+            return;
+        }
+        switch (type)
+        {
+            default:
+            case ShopItem.ItemType.Jump:
+                extraJumps++;
+                break;
+            case ShopItem.ItemType.WallGrab:
+                wallGrabUnlocked = true;
+                break;
         }
     }
 
